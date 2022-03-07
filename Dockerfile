@@ -47,8 +47,10 @@ ENV LANG en_US.utf8
 
 USER rstudio
 COPY setup.do /setup.do
-WORKDIR /home/statauser
+COPY setup.R /setup.R
+WORKDIR /home/rstudio
 RUN /usr/local/stata/stata do /setup.do | tee setup.$(date +%F).log
+RUN Rscript /setup.R
 
 #=============================================== Clean up
 #  then delete the license again
@@ -56,7 +58,8 @@ USER root
 RUN rm /usr/local/stata/stata.lic
 
 # Setup for standard operation
-USER rstudio
-WORKDIR /code
-ENTRYPOINT ["stata-mp"]
+USER root
+WORKDIR /
+#ENTRYPOINT ["stata-mp"]
+CMD ["/init"]
 

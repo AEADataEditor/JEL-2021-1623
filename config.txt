@@ -1,0 +1,7 @@
+# configuration created on 2022-03-07_12:08
+VERSION=17
+TAG=2022-03-07
+MYHUBID=aeadataeditor
+MYIMG=jel-2021-1623
+STATALIC=/usr/local/stata17/stata.lic
+RENVIRON=/home/vilhuber/Workspace/git/.Renviron
