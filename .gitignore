@@ -1,2 +1,8 @@
 config.txt
 stata.lic
+.config
+.local
+.stata17
+.bash_history
+.Renviron
+data

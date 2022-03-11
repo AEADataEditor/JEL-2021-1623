@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # for debugging
-BUILDARGS="--progress plain --no-cache"
+#BUILDARGS="--progress plain --no-cache"
 
 
 # if we are on Github Actions

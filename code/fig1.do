@@ -2,6 +2,8 @@ set more off
 
 log using makeJELfigure.log, replace
 
+global datapath "../data"
+
 *** Reading in narrow extract from IPUMS to make figure of share residing outside birth state by age, by cohort
 
 /***
@@ -25,11 +27,12 @@ label var bpld     `"Birthplace [detailed version]"'
 label var qbpl     `"Flag for Bpl, Nativity"'
 ***/
 
-/**
+
 
 * Read in extract from IPUMS
 
-do usa_00028.do
+* do usa_00028.do
+use "${datapath}/ipums_extract.dta", clear
 
 * Confirm no GQ, no minors
 summ age
@@ -67,7 +70,6 @@ collapse (mean) oobs, by(age cohort)
 save JELgraphdata.dta, replace
 clear
 
-**/
 
 use JELgraphdata.dta
 
@@ -78,12 +80,14 @@ graph twoway connect oobs age if cohort==1 || connect oobs age if cohort==2 || c
   xtitle("Age") ///
   legend(label(1 "1940s") label(2 "1950s") label(3 "1960s") label(4 "1970s") label(5 "1980s") label(6 "1990s"))
 graph save JELcohorts.gph, replace
+graph export JELcohorts.pdf, replace
 
 graph twoway connect oobs age if cohort==1 || connect oobs age if cohort==4 || connect oobs age if cohort==6, ///
   ytitle("Share residing outside birth state") ///
   xtitle("Age") ///
   legend(label(1 "1940s") label(2 "1970s") label(3 "1990s"))
 graph save JELcohorts_few.gph, replace
+graph save JELcohorts_few.pdf, replace
 
 sort age cohort
 gen ref=oobs if cohort==1  
@@ -95,6 +99,7 @@ graph twoway connect reloobs age if cohort==2 || connect reloobs age if cohort==
   xtitle("Age") ///
   legend(label(1 "1950s") label(2 "1960s") label(3 "1970s") label(4 "1980s") label(5 "1990s"))
 graph save JELcohorts_relative.gph, replace
+graph export JELcohorts_relative.pdf, replace
   
 
 

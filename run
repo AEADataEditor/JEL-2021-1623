@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# Check if we are running within Docker or not. If not, install pre-requisites
+
+[[ "$(whoami)" == "rstudio" ]] || Rscript        setup.R
+[[ "$(whoami)" == "rstudio" ]] || stata-mp -b do setup.do
+
+# Run the R code to create, download, and convert the IPUMS extract
+
+Rscript "code/01_extract_ipums.R"
+
+# Now run the Stata code from its original location
+
+cd code
+stata-mp -b do fig1.do
+stata-mp -b do fig2.do
+stata-mp -b do fig3.do
+stata-mp -b do fig4.do
+
+# we should be done
+
+echo "Done."

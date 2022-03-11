@@ -1,6 +1,6 @@
-# configuration created on 2022-03-07_16:55
+# configuration created on 2022-03-11_13:42
 VERSION=17
-TAG=2022-03-07
+TAG=2022-03-11
 MYHUBID=aeadataeditor
 MYIMG=jel-2021-1623
 STATALIC=/usr/local/stata17/stata.lic

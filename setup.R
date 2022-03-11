@@ -4,3 +4,4 @@ remotes::install_github(
   build_vignettes = FALSE, 
   dependencies = TRUE
 )
+install.packages("here")
