@@ -2,6 +2,9 @@
 set trace off
 set more 1 
 capture log close
+
+include "config.do"
+
 clear
 set linesize 200
 clear matrix 
@@ -72,7 +75,8 @@ vetstat         byte    %8.0g      VETSTAT    veteran status [general version]
 vetstatd        byte    %8.0g      VETSTATD   veteran status [detailed version]
 */
 
-use ~/data_house/usa_00108, clear
+// use ~/data_house/usa_00108, clear
+use "${datapath}/ipums-extract-2.dta", clear
 drop if statefip==15 | statefip==2
 drop if farm==2
 gen kid = age<=18

@@ -2,7 +2,7 @@ set more off
 
 log using makeJELfigure.log, replace
 
-global datapath "../data"
+include "config.do"
 
 *** Reading in narrow extract from IPUMS to make figure of share residing outside birth state by age, by cohort
 
@@ -32,7 +32,7 @@ label var qbpl     `"Flag for Bpl, Nativity"'
 * Read in extract from IPUMS
 
 * do usa_00028.do
-use "${datapath}/ipums_extract.dta", clear
+use "${datapath}/ipums-extract-1.dta", clear
 
 * Confirm no GQ, no minors
 summ age

@@ -10,9 +10,9 @@ basepath <- here()
 datapath <- file.path(basepath,"data")
 codepath <- file.path(basepath,"code")
 
-jsonpath     <- file.path(codepath,"ipums-extract-1.json")
-extract.spec <- file.path(datapath,"ipums-extract-1.Rds")
-dtasavepath  <- file.path(datapath,"ipums-extract-1.dta")
+jsonpath     <- file.path(codepath,"ipums-extract-2.json")
+extract.spec <- file.path(datapath,"ipums-extract-2.Rds")
+dtasavepath  <- file.path(datapath,"ipums-extract-2.dta")
 
 # Recover the extract specification
 clone_extract <- define_extract_from_json(
