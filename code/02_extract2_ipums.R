@@ -38,7 +38,8 @@ datgzfile <- basename(downloadable_extract[["download_links"]][["data"]][["url"]
 ddifile   <- basename(downloadable_extract[["download_links"]][["ddi_codebook"]][["url"]])
 if ( file.exists(file.path(datapath,datgzfile))) {
   message(paste0("File already downloaded, see ",datgzfile))
-  path_to_ddi_file <- file.path(datapath,ddifile)
+# This file turns out to be a Stata file so the readin is not required
+path_to_ddi_file <- file.path(datapath,ddifile)
   if ( ! file.exists(path_to_ddi_file)) {
     message("However, there seems to be a problem.")
   }
@@ -48,6 +49,12 @@ if ( file.exists(file.path(datapath,datgzfile))) {
                                      download_dir=datapath,
                                      overwrite = TRUE)
 }
-data <- read_ipums_micro(path_to_ddi_file)
-colnames(data) <- tolower(colnames(data))
-write_dta(data,dtasavepath)
+# This file turns out to be a Stata file so the readin is not required
+if ( grepl("dta.gz",datgzfile) ) {
+	#unzip(file.path(datapath,datgzfile),exdir=datapath,overwrite=FALSE)
+	system(paste0("gunzip -c ",file.path(datapath,datgzfile)," >",dtasavepath))
+} else {
+	data <- read_ipums_micro(path_to_ddi_file)
+	colnames(data) <- tolower(colnames(data))
+	write_dta(data,dtasavepath)
+}

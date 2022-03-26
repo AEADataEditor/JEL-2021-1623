@@ -2,7 +2,7 @@
       name:  <unnamed>
        log:  /home/rstudio/code/fig2.log
   log type:  text
- opened on:  11 Mar 2022, 19:50:50
+ opened on:  26 Mar 2022, 14:00:24
 
 . 
 . /* this dataset is the 1-year 2019 ACS data downloaded from IPUMS https://usa.ipums.org/usa/.
@@ -67,9 +67,481 @@
 > vetstatd        byte    %8.0g      VETSTATD   veteran status [detailed version]
 > */
 . 
-. use ~/data_house/usa_00108, clear
-file /home/rstudio/data_house/usa_00108.dta not found
-r(601);
+. // use ~/data_house/usa_00108, clear
+. use "${datapath}/ipums-extract-2.dta", clear
 
-end of do-file
-r(601);
+. drop if statefip==15 | statefip==2
+(20,891 observations deleted)
+
+. drop if farm==2
+(41,155 observations deleted)
+
+. gen kid = age<=18
+
+. egen nkid = sum(kid), by(serial)
+
+. keep if relate==1 & age>=21 & age<=60
+(2,439,766 observations deleted)
+
+. sum nkid, det
+
+                            nkid
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%            0              0
+ 5%            0              0
+10%            0              0       Obs             737,741
+25%            0              0       Sum of wgt.     737,741
+
+50%            0                      Mean           .8272022
+                        Largest       Std. dev.      1.155473
+75%            2             13
+90%            2             14       Variance       1.335118
+95%            3             14       Skewness       1.541515
+99%            4             16       Kurtosis       5.923911
+
+. 
+. 
+. * variable indicating that someone moved across metro areas, is made missing for people who lived outside the US in the previous year
+. gen dmet = 1 if migmet131~=met2013 & migmet131~=.
+(229,412 missing values generated)
+
+. replace dmet = 0 if migmet131==met2013 & migmet131~=.
+(229,412 real changes made)
+
+. replace dmet = 0 if migrate1==1
+(474,826 real changes made)
+
+. replace dmet = . if migrate1==4
+(3,125 real changes made, 3,125 to missing)
+
+. 
+. preserve
+
+. collapse (sum) perwt if dmet==1, by(met2013)
+
+. rename perwt inmig
+
+. save temp, replace
+file temp.dta saved
+
+. restore
+
+. preserve
+
+. collapse (sum) perwt if dmet==1, by(migmet131)
+
+. rename perwt outmig
+
+. rename migmet131 met2013
+
+. merge 1:1 met2013 using temp
+(label MET2013 already defined)
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                            20
+        from master                         2  (_merge==1)
+        from using                         18  (_merge==2)
+
+    Matched                               241  (_merge==3)
+    -----------------------------------------
+
+. drop _merge
+
+. save temp, replace
+file temp.dta saved
+
+. restore
+
+. preserve
+
+. collapse (sum) perwt if dmet==0 | dmet==1, by(met2013)
+
+. rename perwt pop
+
+. merge 1:1 met2013 using temp
+(label MIGMET131 already defined)
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             2
+        from master                         0  (_merge==1)
+        from using                          2  (_merge==2)
+
+    Matched                               259  (_merge==3)
+    -----------------------------------------
+
+. drop _merge
+
+. replace outmig = -1*outmig
+(243 real changes made)
+
+. sort pop
+
+. gen netmig = inmig + outmig
+(20 missing values generated)
+
+. drop if met2013==0
+(1 observation deleted)
+
+. gsort -netmig
+
+. l met2013 pop inmig outmig netmig , nod noobs
+
+  +----------------------------------------------------+
+  |      met2013       pop    inmig    outmig   netmig |
+  |----------------------------------------------------|
+  | phoenix-mesa   1.2e+06    54062    -36792    17270 |
+  |  houston-the   1.7e+06    58193    -42147    16046 |
+  |  dallas-fort   1.9e+06    74434    -59201    15233 |
+  |  raleigh, nc    390736    27097    -13614    13483 |
+  | austin-round    619205    39806    -26919    12887 |
+  |----------------------------------------------------|
+  | atlanta-sand   1.6e+06    65362    -53909    11453 |
+  | sacramento--    557434    27431    -16139    11292 |
+  | las vegas-he    552155    28151    -16953    11198 |
+  | tampa-st. pe    740915    37760    -27505    10255 |
+  | seattle-taco   1.1e+06    47844    -38885     8959 |
+  |----------------------------------------------------|
+  | colorado spr    189358    22934    -14379     8555 |
+  | charleston-n    204292    15762     -9015     6747 |
+  | st. louis, m    739817    23758    -17590     6168 |
+  | portland-van    650698    29059    -22902     6157 |
+  | nashville-da    554627    24016    -18406     5610 |
+  |----------------------------------------------------|
+  | lakeland-win    135356    13079     -7802     5277 |
+  | philadelphia   1.5e+06    50635    -45863     4772 |
+  | riverside-sa    925051    35698    -31234     4464 |
+  | greenville-a    241123    14197     -9766     4431 |
+  | memphis, tn-    316570    10805     -7023     3782 |
+  |----------------------------------------------------|
+  |  boise city,    185802     9045     -5373     3672 |
+  | birmingham-h    291202    12830     -9234     3596 |
+  | portland-sou    137141     9467     -6092     3375 |
+  | richmond, va    313280    14270    -10981     3289 |
+  | jacksonville    379680    23218    -19951     3267 |
+  |----------------------------------------------------|
+  | minneapolis-    967930    28479    -25245     3234 |
+  |    ocala, fl     71296     6121     -3021     3100 |
+  |   fresno, ca    215640     6773     -3699     3074 |
+  |   dayton, oh    208467    10803     -7878     2925 |
+  | albany-schen    221070    11189     -8275     2914 |
+  |----------------------------------------------------|
+  |  lubbock, tx     79386     7523     -4685     2838 |
+  |   toledo, oh    168812     9448     -6761     2687 |
+  | kansas city,    574370    23292    -20755     2537 |
+  | cape coral-f    137119     9195     -6755     2440 |
+  | deltona-dayt    133752     9245     -6880     2365 |
+  |----------------------------------------------------|
+  |  midland, tx     45498     5663     -3319     2344 |
+  | chattanooga,    132647     7403     -5082     2321 |
+  | knoxville, t    237046    10574     -8280     2294 |
+  | bremerton-si     68048     8152     -5872     2280 |
+  | bend-redmond     43745     5240     -3046     2194 |
+  |----------------------------------------------------|
+  | hickory-leno     98671     3751     -1590     2161 |
+  | gulfport-bil     83119     4224     -2167     2057 |
+  | oklahoma cit    373148    15892    -13881     2011 |
+  | canton-massi     96714     4788     -2843     1945 |
+  |     reno, nv    121037     8199     -6288     1911 |
+  |----------------------------------------------------|
+  |   topeka, ks     55856     2914     -1011     1903 |
+  | gainesville,     42201     3692     -1810     1882 |
+  | des moines-w    200464     8290     -6413     1877 |
+  | cleveland-el    536798    16907    -15114     1793 |
+  |  greenville,     48033     6119     -4443     1676 |
+  |----------------------------------------------------|
+  |   tucson, az    237229    12146    -10480     1666 |
+  | harrisonburg     28164     2656      -994     1662 |
+  | kalamazoo-po     96605     6186     -4530     1656 |
+  |  wichita, ks    150537     7652     -6004     1648 |
+  | pensacola-fe    115516     8603     -6960     1643 |
+  |----------------------------------------------------|
+  | salt lake ci    303449    15441    -13827     1614 |
+  |   joplin, mo     42924     2971     -1383     1588 |
+  | spartanburg,     77163     4842     -3303     1539 |
+  | fort collins     96690     7829     -6293     1536 |
+  |     yuma, az     43548     2859     -1335     1524 |
+  |----------------------------------------------------|
+  | naples-immok     60568     4523     -3011     1512 |
+  | spokane-spok    157128     8462     -7002     1460 |
+  |   racine, wi     49805     3881     -2423     1458 |
+  | jefferson ci     36906     1802      -372     1430 |
+  | homosassa sp     25149     2845     -1417     1428 |
+  |----------------------------------------------------|
+  |  fort wayne,     97934     4141     -2779     1362 |
+  |   mobile, al     97281     4646     -3301     1345 |
+  | visalia-port    102265     3401     -2064     1337 |
+  | santa fe, nm     31188     2218      -889     1329 |
+  | amarillo, tx     62089     3585     -2278     1307 |
+  |----------------------------------------------------|
+  |  las cruces,     51785     3797     -2501     1296 |
+  |  lake havasu     44902     3019     -1729     1290 |
+  |  cincinnati,    552974    19008    -17743     1265 |
+  | harrisburg-c    146404     8584     -7377     1207 |
+  | bakersfield,    188394     6481     -5296     1185 |
+  |----------------------------------------------------|
+  |  reading, pa     97929     6682     -5603     1079 |
+  | la crosse-on     30385     1647      -585     1062 |
+  |  lebanon, pa     32330     2474     -1439     1035 |
+  | state colleg     36646     3557     -2537     1020 |
+  | olympia-tumw     70131     5522     -4519     1003 |
+  |----------------------------------------------------|
+  | mansfield, o     30026     1960      -963      997 |
+  | north port-s    141250     8647     -7655      992 |
+  | anniston-oxf     28541     2561     -1584      977 |
+  | allentown-be    195049     9421     -8454      967 |
+  |  norwich-new     70592     4144     -3229      915 |
+  |----------------------------------------------------|
+  |   eugene, or     91606     4659     -3873      786 |
+  |   yakima, wa     54079     2423     -1653      770 |
+  | sebastian-ve     25179     2222     -1461      761 |
+  | bismarck, nd     34931     2157     -1409      748 |
+  |   monroe, mi     35396     2590     -1909      681 |
+  |----------------------------------------------------|
+  | johnstown, p     30665     1861     -1181      680 |
+  |  decatur, al     35941     1187      -517      670 |
+  |  redding, ca     43108     2564     -1898      666 |
+  | york-hanover    110080     5036     -4387      649 |
+  | omaha-counci    267997     9935     -9319      616 |
+  |----------------------------------------------------|
+  | janesville-b     41819     2136     -1530      606 |
+  | new haven-mi    204559    10863    -10274      589 |
+  | rocky mount,     34605     1798     -1217      581 |
+  |  charleston,     46568     2822     -2246      576 |
+  |   ithaca, ny     25516     4002     -3431      571 |
+  |----------------------------------------------------|
+  |  modesto, ca    118509     5432     -4900      532 |
+  | muskegon, mi     40669     2911     -2380      531 |
+  |  provo-orem,    135357    10372     -9842      530 |
+  | fayetteville    135725     6726     -6206      520 |
+  | lewiston-aub     28851     2219     -1704      515 |
+  |----------------------------------------------------|
+  |  jackson, tn     27647     1720     -1211      509 |
+  | salisbury, m     84468     2783     -2338      445 |
+  | lafayette-we     52575     4078     -3637      441 |
+  | punta gorda,     24640     1960     -1538      422 |
+  | san antonio-    550664    26048    -25647      401 |
+  |----------------------------------------------------|
+  |  morgantown,     34382     2515     -2153      362 |
+  |  tuscaloosa,     53713     3111     -2760      351 |
+  | louisville/j    316182    11149    -10814      335 |
+  | san luis obi     57780     3523     -3204      319 |
+  | springfield,     52906     1851     -1552      299 |
+  |----------------------------------------------------|
+  | corpus chris    112232     6309     -6012      297 |
+  |   merced, ca     54724     2865     -2584      281 |
+  | bloomington,     43622     3900     -3623      277 |
+  | college stat     58945     6461     -6205      256 |
+  |     napa, ca     27542     2188     -1949      239 |
+  |----------------------------------------------------|
+  |    dover, de     41938     2542     -2314      228 |
+  | east strouds     34010     1881     -1654      227 |
+  |  bellingham,     54436     2999     -2793      206 |
+  | champaign-ur     55429     4590     -4402      188 |
+  | niles-benton     37506     2001     -1819      182 |
+  |----------------------------------------------------|
+  |  lincoln, ne     87346     5171     -5008      163 |
+  | parkersburg-     22122      475      -359      116 |
+  | bloomington,     35141     3722     -3646       76 |
+  | goldsboro, n     28668     2391     -2326       65 |
+  | yuba city, c     37196     2397     -2346       51 |
+  |----------------------------------------------------|
+  | michigan cit     25607     1244     -1276      -32 |
+  |     lima, oh     25946     1365     -1436      -71 |
+  | baton rouge,    192582     6366     -6465      -99 |
+  |   wausau, wi     32978     1197     -1314     -117 |
+  | springfield,     31228     1572     -1704     -132 |
+  |----------------------------------------------------|
+  |  gadsden, al     24155     1013     -1155     -142 |
+  |  jackson, mi     36189     2092     -2238     -146 |
+  |  pittsfield,     29094     1292     -1440     -148 |
+  |   muncie, in     26940     1966     -2118     -152 |
+  | wenatchee, w     25603      821      -982     -161 |
+  |----------------------------------------------------|
+  | port st. luc     88962     4333     -4499     -166 |
+  |  burlington,     41769     3085     -3263     -178 |
+  | oshkosh-neen     48312     3683     -3879     -196 |
+  | myrtle beach     94099     4562     -4803     -241 |
+  |  decatur, il     25007      676      -921     -245 |
+  |----------------------------------------------------|
+  |     erie, pa     67595     2837     -3093     -256 |
+  |   madera, ca     28345      849     -1115     -266 |
+  | buffalo-chee    302913     6136     -6470     -334 |
+  | houma-thibod     54396     1305     -1650     -345 |
+  | lancaster, p    123035     5063     -5409     -346 |
+  |----------------------------------------------------|
+  | owensboro, k     28789     1579     -1928     -349 |
+  | oxnard-thous    168192     6054     -6467     -413 |
+  | wichita fall     31060     1547     -1969     -422 |
+  |     waco, tx     58795     3064     -3494     -430 |
+  |  st. joseph,     27558      996     -1428     -432 |
+  |----------------------------------------------------|
+  | hanford-corc     31321     1592     -2039     -447 |
+  | blacksburg-c     42967     2520     -3036     -516 |
+  | columbia, sc    208559    10302    -10834     -532 |
+  | palm bay-mel    118565     6885     -7427     -542 |
+  |  wilmington,     74716     4707     -5254     -547 |
+  |----------------------------------------------------|
+  |  trenton, nj     81795     6724     -7292     -568 |
+  |   laredo, tx     56469     1310     -1879     -569 |
+  | beaumont-por     92900     3781     -4373     -592 |
+  |  hilton head     42616     2615     -3219     -604 |
+  |  saginaw, mi     47319     2107     -2717     -610 |
+  |----------------------------------------------------|
+  |   monroe, la     36371     1122     -1749     -627 |
+  |  pittsburgh,    597953    20404    -21055     -651 |
+  | vallejo-fair     96343     5270     -5922     -652 |
+  | lafayette, l    136652     3125     -3782     -657 |
+  |   bangor, me     39284     1433     -2127     -694 |
+  |----------------------------------------------------|
+  | burlington-s     59328     2813     -3521     -708 |
+  | ogden-clearf    141676     5680     -6416     -736 |
+  | sheboygan, w     29791      381     -1154     -773 |
+  |  montgomery,     93016     3946     -4828     -882 |
+  | barnstable t     49398     2326     -3215     -889 |
+  |----------------------------------------------------|
+  |  salinas, ca     96860     4352     -5259     -907 |
+  |  san angelo,     28489      805     -1713     -908 |
+  | prescott, az     43129     1967     -2971    -1004 |
+  | shreveport-b    105070     2208     -3287    -1079 |
+  | auburn-opeli     43668     3362     -4450    -1088 |
+  |----------------------------------------------------|
+  |  medford, or     46372     2657     -3775    -1118 |
+  | flagstaff, a     31630     2742     -3879    -1137 |
+  | santa maria-     87996     3717     -4860    -1143 |
+  | santa cruz-w     58516     2585     -3781    -1196 |
+  | glens falls,     30695     1040     -2241    -1201 |
+  |----------------------------------------------------|
+  | greensboro-h    208050     9586    -10789    -1203 |
+  |    tyler, tx     50772     1855     -3065    -1210 |
+  | lynchburg, v     61264     2150     -3439    -1289 |
+  | springfield,    116399     4449     -5752    -1303 |
+  | kankakee, il     24941      341     -1652    -1311 |
+  |----------------------------------------------------|
+  | stockton-lod    158238     4888     -6294    -1406 |
+  | florence, sc     46894      757     -2209    -1452 |
+  | augusta-rich    118844     4956     -6425    -1469 |
+  | lansing-east    119313     5725     -7204    -1479 |
+  |  st. george,     36543     1642     -3169    -1527 |
+  |----------------------------------------------------|
+  | iowa city, i     42825     3651     -5180    -1529 |
+  |    chico, ca     44054     2868     -4414    -1546 |
+  | lawrence, ks     30676     2031     -3609    -1578 |
+  | orlando-kiss    585723    31847    -33454    -1607 |
+  | rockford, il     84557     2487     -4130    -1643 |
+  |----------------------------------------------------|
+  |  roanoke, va     79807     2970     -4637    -1667 |
+  |  santa rosa,    107412     4278     -5954    -1676 |
+  | elkhart-gosh     42924     1671     -3386    -1715 |
+  | brownsville-     84858     1042     -2779    -1737 |
+  | youngstown-w    133428     3608     -5467    -1859 |
+  |----------------------------------------------------|
+  | little rock-    180499     5495     -7358    -1863 |
+  | el centro, c     31770      358     -2234    -1876 |
+  | hartford-wes    298309    11533    -13413    -1880 |
+  |  el paso, tx    186870     8789    -10768    -1979 |
+  | mcallen-edin    172888     3289     -5280    -1991 |
+  |----------------------------------------------------|
+  | ann arbor, m     93522     6902     -8979    -2077 |
+  | clarksville,     84654     4961     -7044    -2083 |
+  |    akron, oh    177077     7126     -9358    -2232 |
+  | daphne-fairh     48346     1464     -3856    -2392 |
+  | columbus, oh    547101    16038    -18466    -2428 |
+  |----------------------------------------------------|
+  | new orleans-    300330    11354    -13844    -2490 |
+  |  jackson, ms    148805     3298     -6048    -2750 |
+  | bridgeport-s    218408    11914    -14792    -2878 |
+  | scranton--wi    121550     5992     -8950    -2958 |
+  | columbia, mo     48966     2390     -5461    -3071 |
+  |----------------------------------------------------|
+  | milwaukee-wa    420013    12121    -15210    -3089 |
+  | indianapolis    539798    19177    -22281    -3104 |
+  | albuquerque,    217811     6629     -9827    -3198 |
+  | gainesville,     68690     5211     -8529    -3318 |
+  | rochester, n    279875     7647    -11271    -3624 |
+  |----------------------------------------------------|
+  | detroit-warr   1.1e+06    24090    -27742    -3652 |
+  |   odessa, tx     39650     2697     -6771    -4074 |
+  | san jose-sun    448394    23963    -28175    -4212 |
+  | fayetteville     92587     7351    -11776    -4425 |
+  | grand rapids    233587     6997    -11453    -4456 |
+  |----------------------------------------------------|
+  | baltimore-co    675395    26561    -31518    -4957 |
+  | washington-a   1.5e+06    65657    -71796    -6139 |
+  | springfield,    136579     3155     -9558    -6403 |
+  | virginia bea    422799    21649    -29133    -7484 |
+  | san diego-ca    762308    34963    -42961    -7998 |
+  |----------------------------------------------------|
+  | chicago-nape   2.3e+06    50095    -63763   -13668 |
+  | san francisc   1.1e+06    51239    -65224   -13985 |
+  | miami-fort l   1.3e+06    30144    -49170   -19026 |
+  | los angeles-   3.0e+06    72904    -92421   -19517 |
+  | new york-new   4.7e+06    72144   -134716   -62572 |
+  |----------------------------------------------------|
+  | urban honolu         .        .    -12665        . |
+  | boston-cambr   1.2e+06   180579         .        . |
+  | worcester, m    236965    26614         .        . |
+  | atlantic cit     57555     6842         .        . |
+  |  ocean city,     23493     3795         .        . |
+  |----------------------------------------------------|
+  | coeur d'alen     39500     6447         .        . |
+  |  eau claire,     39929     7738         .        . |
+  | denver-auror    841151   171092         .        . |
+  | manchester-n     94871    14704         .        . |
+  |  utica-rome,     62804     7978         .        . |
+  |----------------------------------------------------|
+  | providence-w    395832    51200         .        . |
+  | anchorage, a         .        .     -7475        . |
+  | syracuse, ny    160273    21420         .        . |
+  |   pueblo, co     37471     6035         .        . |
+  | asheville, n    125209    19076         .        . |
+  |----------------------------------------------------|
+  |  huntsville,    116966    23213         .        . |
+  | winston-sale    163737    19025         .        . |
+  | grand juncti     33915     7685         .        . |
+  | charlotte-co    685027   109063         .        . |
+  |  binghamton,     55940    10098         .        . |
+  +----------------------------------------------------+
+
+. gen netmigrank = _n if netmig~=.
+(20 missing values generated)
+
+. 
+. gen migdiff = outmig-netmig if netmig<0
+(150 missing values generated)
+
+. replace migdiff = inmig - netmig if netmig>0
+(130 real changes made)
+
+. gen migopp = outmig if netmig>0
+(128 missing values generated)
+
+. replace migopp = inmig if netmig<0
+(110 real changes made)
+
+. 
+. quietly for var netmig migdiff migopp: replace X = X/1000
+
+. 
+. 
+. lab def cbsa 38060 "Phoenix" 26420 "Houston" 19100 "Dallas" 39580 "Raleigh" 12420 "Austin" 12060 "Atlanta" 40900 "Sacramento" 29820 "Las Vegas" 45300 "Tampa" 42660 "Seattle"  12580 "Baltimore" 47900
+>  "Washington DC" 44140 "Springfield MA" 47260 "Virginia Beach" 41740 "San Diego" 16980 "Chicago" 41860 "San Francisco" 33100 "Miami" 31080 "Los Angeles" 35620 "New York"
+
+. lab val met2013 cbsa
+
+. graph bar netmig migdiff migopp if netmigrank<=10 | (netmigrank>=231 & netmigrank~=.), stack saving(fig2, replace) graphregion(color(white)) over(met2013, lab(angle(45)) sort(netmigrank)) bar(1,colo
+> r(navy)) bar(2,color(gray*.5)) bar(3,color(gray*.5)) legend(lab(1 "Net Migration") lab(2 "In/Out Migration") order(1 2)) ytitle("Thousands")
+file fig2.gph saved
+
+. 
+. save fig2, replace
+file fig2.dta saved
+
+. graph export fig2.pdf, replace
+file fig2.pdf saved as PDF format
+
+. 
+. 
+. quietly log close

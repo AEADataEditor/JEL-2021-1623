@@ -2,11 +2,14 @@
       name:  <unnamed>
        log:  /home/rstudio/code/makeJELfigure.log
   log type:  text
- opened on:  11 Mar 2022, 19:50:07
+ opened on:  26 Mar 2022, 13:59:44
 
 . 
+. include "config.do"
+
 . global datapath "../data"
 
+. 
 . 
 . *** Reading in narrow extract from IPUMS to make figure of share residing out
 > side birth state by age, by cohort
@@ -37,7 +40,7 @@
 . * Read in extract from IPUMS
 . 
 . * do usa_00028.do
-. use "${datapath}/ipums_extract.dta", clear
+. use "${datapath}/ipums-extract-1.dta", clear
 
 . 
 . * Confirm no GQ, no minors
@@ -166,7 +169,6 @@ file JELcohorts.pdf saved as PDF format
 file JELcohorts_few.gph saved
 
 . graph save JELcohorts_few.pdf, replace
-(file JELcohorts_few.pdf not found)
 file JELcohorts_few.pdf saved as .gph format
 
 . 

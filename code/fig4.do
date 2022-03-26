@@ -4,7 +4,7 @@ set more 1
 capture log close
 
 include "config.do"
-
+version 16
 clear
 set linesize 200
 clear matrix 
@@ -180,7 +180,7 @@ replace mighatb = r(mean)+mighatb if owner==0 & state==18
 sum migresid [w=perwt] if owner==1 & hisp==1
 replace mighatb = r(mean)+mighatb if owner==1 & state==18
 graph bar mighatb if state<=18 & state~=5 & state~=9 & state~=10 & state~=11 & state~=16, saving(fig4, replace) over(owner, gap(10) relab(1 "Renter" 2 "Owner") lab(angle(45))) over(state,  gap(100) relab(1 `""No" "Controls""' 2 "Controls" 3 `""Age" "25-35""' 4 `""Age" "36-55""' 5 `""No Coll." "Degree""' 6 `""Coll." "Degree +""' 7 "Black" 8 "Hispanic") lab(labsize(medsmall)))  bar(1, color(navy)) ylab(, nogrid) graphregion(color(white)) ytitle("Average Migration Rate")
-
+graph export fig4.pdf, replace
 
 
 quietly log close

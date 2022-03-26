@@ -130,7 +130,7 @@ lab val met2013 cbsa
 graph bar netmig migdiff migopp if netmigrank<=10 | (netmigrank>=231 & netmigrank~=.), stack saving(fig2, replace) graphregion(color(white)) over(met2013, lab(angle(45)) sort(netmigrank)) bar(1,color(navy)) bar(2,color(gray*.5)) bar(3,color(gray*.5)) legend(lab(1 "Net Migration") lab(2 "In/Out Migration") order(1 2)) ytitle("Thousands")
 
 save fig2, replace
-
+graph export fig2.pdf, replace
 
 
 quietly log close

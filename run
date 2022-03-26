@@ -8,6 +8,7 @@
 # Run the R code to create, download, and convert the IPUMS extract
 
 Rscript "code/01_extract_ipums.R"
+Rscript "code/02_extract2_ipums.R"
 
 # Now run the Stata code from its original location
 

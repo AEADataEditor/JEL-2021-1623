@@ -2,7 +2,7 @@
       name:  <unnamed>
        log:  /home/rstudio/code/fig4.log
   log type:  text
- opened on:  11 Mar 2022, 19:50:50
+ opened on:  26 Mar 2022, 14:00:26
 
 . 
 . /* this dataset is the 1-year 2019 ACS data downloaded from IPUMS https://usa.ipums.org/usa/.
@@ -67,9 +67,505 @@
 > vetstatd        byte    %8.0g      VETSTATD   veteran status [detailed version]
 > */
 . 
-. use ~/data_house/usa_00108, clear
-file /home/rstudio/data_house/usa_00108.dta not found
-r(601);
+. // use ~/data_house/usa_00108, clear
+. use "${datapath}/ipums-extract-2.dta", clear
 
-end of do-file
-r(601);
+. drop if statefip==15 | statefip==2
+(20,891 observations deleted)
+
+. drop if farm==2
+(41,155 observations deleted)
+
+. gen kid = age<=18
+
+. egen nkid = sum(kid), by(serial)
+
+. keep if relate==1 & age>=21 & age<=60
+(2,439,766 observations deleted)
+
+. sum nkid, det
+
+                            nkid
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%            0              0
+ 5%            0              0
+10%            0              0       Obs             737,741
+25%            0              0       Sum of wgt.     737,741
+
+50%            0                      Mean           .8272022
+                        Largest       Std. dev.      1.155473
+75%            2             13
+90%            2             14       Variance       1.335118
+95%            3             14       Skewness       1.541515
+99%            4             16       Kurtosis       5.923911
+
+. 
+. gen owner = ownershp==1 if ownershp>=1 & ownershp<=2
+
+. gen dstate = migrate1==3 if migrate1>=1 & migrate1<=3
+(3,125 missing values generated)
+
+. * variable indicating that someone moved across metro areas, is made missing for people who lived outside the US in the previous year
+. gen dmet = 1 if migmet131~=met2013 & migmet131~=.
+(229,412 missing values generated)
+
+. replace dmet = 0 if migmet131==met2013 & migmet131~=.
+(229,412 real changes made)
+
+. replace dmet = 0 if migrate1==1
+(474,826 real changes made)
+
+. replace dmet = . if migrate1==4
+(3,125 real changes made, 3,125 to missing)
+
+. 
+. tab dmet dstate
+
+           |        dstate
+      dmet |         0          1 |     Total
+-----------+----------------------+----------
+         0 |   701,530      2,294 |   703,824 
+         1 |    14,783     16,009 |    30,792 
+-----------+----------------------+----------
+     Total |   716,313     18,303 |   734,616 
+
+. sum owner dstate dmet [w=perwt]
+(analytic weights assumed)
+
+    Variable |     Obs      Weight        Mean   Std. dev.       Min        Max
+-------------+-----------------------------------------------------------------
+       owner | 737,741    78453209    .5726545   .4946935          0          1
+      dstate | 734,616    78074255    .0263805   .1602641          0          1
+        dmet | 734,616    78074255    .0445375   .2062862          0          1
+
+. table owner [w=perwt], c(m dstate m dmet)
+(frequency weights assumed)
+
+--------------------------------------
+    owner | mean(dstate)    mean(dmet)
+----------+---------------------------
+        0 |     .0465465      .0758923
+        1 |     .0114439      .0213138
+--------------------------------------
+
+. 
+. gen agedum = 1 if age>=21 & age<=24
+(708,103 missing values generated)
+
+. replace agedum = 2 if age>=25 & age<=30
+(87,440 real changes made)
+
+. replace agedum = 3 if age>=31 & age<=40
+(182,281 real changes made)
+
+. replace agedum = 4 if age>=41 & age<=50
+(193,495 real changes made)
+
+. replace agedum = 5 if age>=51 & age<=60
+(244,887 real changes made)
+
+. quietly tab agedum, gen(agedum)
+
+. gen female = sex==2 if sex~=.
+
+. gen inschool = school==2 if school~=.
+
+. gen lths = educ<=5 if educ~=.
+
+. gen hsdeg = educ==6 if educ~=.
+
+. gen somecol = educ>=7 & educ<=8 if educ~=.
+
+. gen colplus = educ>=9 if educ~=.
+
+. gen hisp = hispan>=1 & hispan<=4 if hispan~=.
+
+. gen black = race==2 & hisp==0 if hisp~=. & race~=.
+
+. gen asian = race>=4 & race<=6 & hisp==0 if hisp~=. & race~=.
+
+. gen married = marst==1 if marst~=.
+
+. gen sep = marst>=2 & marst<=3 if marst~=.
+
+. gen div = marst>=4 & marst<=5 if marst~=.
+
+. gen vet = vetstat==2 if vetstat>=1 & vetstat<=2
+
+. gen unemp = empstat==2 if empstat~=.
+
+. gen nlf = empstat==3 if empstat~=.
+
+. gen selfemp = classwkr==2
+
+. gen notcit = citizen==3 if citizen~=.
+
+. gen natcit = citizen==2 if citizen~=.
+
+. gen bornab = citizen==1 if citizen~=.
+
+. gen mil = ind>=9670 & ind<=9870 
+
+. gen kiddum = nkid>=1 
+
+. gen divkid = div*kiddum
+
+. gen sepkid = sep*kiddum
+
+. 
+. reg dmet owner [w=perwt]
+(analytic weights assumed)
+(sum of wgt is 78,074,255)
+
+      Source |       SS           df       MS      Number of obs   =   734,616
+-------------+----------------------------------   F(1, 734614)    =  12789.38
+       Model |  534.927332         1  534.927332   Prob > F        =    0.0000
+    Residual |  30725.8898   734,614  .041825897   R-squared       =    0.0171
+-------------+----------------------------------   Adj R-squared   =    0.0171
+       Total |  31260.8171   734,615  .042554014   Root MSE        =    .20451
+
+------------------------------------------------------------------------------
+        dmet | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+       owner |  -.0545784   .0004826  -113.09   0.000    -.0555243   -.0536325
+       _cons |   .0758923   .0003658   207.47   0.000     .0751753    .0766092
+------------------------------------------------------------------------------
+
+. reg dmet owner agedum2-agedum5 female school lths somecol colplus hisp black asian married sep div vet unemp nlf selfemp notcit natcit bornab mil kiddum divkid sepkid [w=perwt]
+(analytic weights assumed)
+(sum of wgt is 78,074,255)
+
+      Source |       SS           df       MS      Number of obs   =   734,616
+-------------+----------------------------------   F(27, 734588)   =   1184.75
+       Model |  1304.47279        27   48.313807   Prob > F        =    0.0000
+    Residual |  29956.3443   734,588   .04077979   R-squared       =    0.0417
+-------------+----------------------------------   Adj R-squared   =    0.0417
+       Total |  31260.8171   734,615  .042554014   Root MSE        =    .20194
+
+------------------------------------------------------------------------------
+        dmet | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+       owner |   -.044209   .0005541   -79.78   0.000    -.0452951   -.0431229
+     agedum2 |  -.0586932   .0013093   -44.83   0.000    -.0612594    -.056127
+     agedum3 |  -.0855956   .0012757   -67.10   0.000    -.0880958   -.0830953
+     agedum4 |  -.1000141   .0013061   -76.58   0.000     -.102574   -.0974542
+     agedum5 |  -.1066033    .001326   -80.40   0.000    -.1092022   -.1040044
+      female |  -.0022801   .0004953    -4.60   0.000    -.0032508   -.0013093
+      school |   .0056563   .0010149     5.57   0.000     .0036671    .0076455
+        lths |   .0005634   .0010358     0.54   0.586    -.0014667    .0025936
+     somecol |   .0054711   .0006533     8.37   0.000     .0041906    .0067515
+     colplus |   .0291733   .0006081    47.97   0.000     .0279814    .0303652
+        hisp |  -.0094836   .0007538   -12.58   0.000     -.010961   -.0080062
+       black |  -.0149396   .0007441   -20.08   0.000    -.0163981   -.0134811
+       asian |    .002927   .0011896     2.46   0.014     .0005954    .0052585
+     married |   .0044188   .0006687     6.61   0.000     .0031082    .0057295
+         sep |   .0230744   .0014535    15.88   0.000     .0202256    .0259231
+         div |   .0032098   .0009139     3.51   0.000     .0014185     .005001
+         vet |   .0157569    .001088    14.48   0.000     .0136245    .0178893
+       unemp |   .0174381    .001521    11.47   0.000      .014457    .0204192
+         nlf |   .0095101   .0008009    11.87   0.000     .0079403    .0110799
+     selfemp |   .0090313   .0007262    12.44   0.000      .007608    .0104547
+      notcit |  -.0025258    .001017    -2.48   0.013    -.0045191   -.0005326
+      natcit |  -.0027617   .0009454    -2.92   0.003    -.0046146   -.0009089
+      bornab |   .0046579   .0023086     2.02   0.044      .000133    .0091827
+         mil |    .101368   .0027689    36.61   0.000     .0959412    .1067949
+      kiddum |    -.01761   .0006087   -28.93   0.000     -.018803    -.016417
+      divkid |   .0013481   .0013356     1.01   0.313    -.0012696    .0039657
+      sepkid |  -.0104821    .002163    -4.85   0.000    -.0147215   -.0062427
+       _cons |   .1375682    .001881    73.14   0.000     .1338816    .1412549
+------------------------------------------------------------------------------
+
+. *gen mighat = dmet-dmet+_b[_cons]+_b[agedum4]+_b[colplus] if owner==0 & female==1
+. *replace mighat  = _b[_cons]+_b[agedum4]+_b[colplus]+_b[owner] if owner==1 & female==1
+. reg dmet agedum2-agedum5 female school lths somecol colplus hisp black asian married sep div vet unemp nlf selfemp notcit natcit bornab mil kiddum divkid sepkid [w=perwt]
+(analytic weights assumed)
+(sum of wgt is 78,074,255)
+
+      Source |       SS           df       MS      Number of obs   =   734,616
+-------------+----------------------------------   F(26, 734589)   =    977.05
+       Model |  1044.91742        26  40.1891317   Prob > F        =    0.0000
+    Residual |  30215.8997   734,589  .041133069   R-squared       =    0.0334
+-------------+----------------------------------   Adj R-squared   =    0.0334
+       Total |  31260.8171   734,615  .042554014   Root MSE        =    .20281
+
+------------------------------------------------------------------------------
+        dmet | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+     agedum2 |  -.0624053   .0013141   -47.49   0.000     -.064981   -.0598296
+     agedum3 |  -.0954653   .0012751   -74.87   0.000    -.0979645   -.0929661
+     agedum4 |  -.1146649   .0012987   -88.29   0.000    -.1172103   -.1121194
+     agedum5 |  -.1255077   .0013103   -95.79   0.000    -.1280758   -.1229396
+      female |  -.0016795   .0004974    -3.38   0.001    -.0026543   -.0007047
+      school |   .0074289   .0010191     7.29   0.000     .0054316    .0094263
+        lths |   .0034724   .0010396     3.34   0.001     .0014347      .00551
+     somecol |   .0040556   .0006559     6.18   0.000     .0027701    .0053411
+     colplus |   .0248307   .0006083    40.82   0.000     .0236385     .026023
+        hisp |  -.0054007   .0007553    -7.15   0.000    -.0068811   -.0039203
+       black |  -.0063335   .0007395    -8.56   0.000    -.0077829   -.0048842
+       asian |   .0048772   .0011945     4.08   0.000     .0025361    .0072184
+     married |   -.008063    .000653   -12.35   0.000    -.0093428   -.0067832
+         sep |   .0230258   .0014597    15.77   0.000     .0201647    .0258868
+         div |   .0004947   .0009172     0.54   0.590     -.001303    .0022925
+         vet |   .0150546   .0010926    13.78   0.000     .0129131    .0171961
+       unemp |   .0219524   .0015265    14.38   0.000     .0189605    .0249443
+         nlf |   .0126561   .0008034    15.75   0.000     .0110814    .0142307
+     selfemp |   .0088625   .0007293    12.15   0.000      .007433     .010292
+      notcit |   .0062225   .0010154     6.13   0.000     .0042324    .0082127
+      natcit |   -.002701   .0009494    -2.84   0.004    -.0045619   -.0008401
+      bornab |    .005773   .0023186     2.49   0.013     .0012287    .0103174
+         mil |   .1074822   .0027798    38.67   0.000     .1020339    .1129304
+      kiddum |  -.0199498   .0006106   -32.67   0.000    -.0211465    -.018753
+      divkid |   .0018969   .0013413     1.41   0.157    -.0007321    .0045258
+      sepkid |  -.0103265   .0021723    -4.75   0.000    -.0145842   -.0060688
+       _cons |   .1288227   .0018859    68.31   0.000     .1251264     .132519
+------------------------------------------------------------------------------
+
+. predict migresid if e(sample), resid
+(3,125 missing values generated)
+
+. gen regsample = 1 if e(sample)
+(3,125 missing values generated)
+
+. sum dmet[w=perwt] if  owner==0
+(analytic weights assumed)
+
+    Variable |     Obs      Weight        Mean   Std. dev.       Min        Max
+-------------+-----------------------------------------------------------------
+        dmet | 261,844    33221435    .0758923   .2648262          0          1
+
+. gen mighatb = r(mean) if owner==0 & state==1
+(734,078 missing values generated)
+
+. sum dmet[w=perwt] if  owner==1 
+(analytic weights assumed)
+
+    Variable |     Obs      Weight        Mean   Std. dev.       Min        Max
+-------------+-----------------------------------------------------------------
+        dmet | 472,772    44852820    .0213138   .1444286          0          1
+
+. replace mighatb = r(mean) if owner==1 & state==1
+(7,591 real changes made)
+
+. sum dmet [w=perwt] if regsample==1
+(analytic weights assumed)
+
+    Variable |     Obs      Weight        Mean   Std. dev.       Min        Max
+-------------+-----------------------------------------------------------------
+        dmet | 734,616    78074255    .0445375   .2062862          0          1
+
+. replace mighatb = r(mean) if state==4
+(15,568 real changes made)
+
+. sum migresid [w=perwt] if owner==0
+(analytic weights assumed)
+
+    Variable |     Obs      Weight        Mean   Std. dev.       Min        Max
+-------------+-----------------------------------------------------------------
+    migresid | 261,844    33221435    .0187823   .2605079  -.3183396   1.017269
+
+. replace mighatb = r(mean)+mighatb if owner==0 & state==4
+(5,817 real changes made)
+
+. sum migresid [w=perwt] if owner==1
+(analytic weights assumed)
+
+    Variable |     Obs      Weight        Mean   Std. dev.       Min        Max
+-------------+-----------------------------------------------------------------
+    migresid | 472,772    44852820   -.0139116   .1444874  -.2917914   1.021898
+
+. replace mighatb = r(mean)+mighatb if owner==1 & state==4
+(9,751 real changes made)
+
+. sum dmet [w=perwt] if regsample==1 & age>=25 & age<=35
+(analytic weights assumed)
+
+    Variable |     Obs      Weight        Mean   Std. dev.       Min        Max
+-------------+-----------------------------------------------------------------
+        dmet | 174,916    20409860     .072005   .2584969          0          1
+
+. replace mighatb = r(mean) if state==6
+(83,643 real changes made)
+
+. sum migresid [w=perwt] if owner==0 & age>=25 & age<=35
+(analytic weights assumed)
+
+    Variable |     Obs      Weight        Mean   Std. dev.       Min        Max
+-------------+-----------------------------------------------------------------
+    migresid |  93,237    12227969    .0211574   .2885599  -.2576527   .9962609
+
+. replace mighatb = r(mean)+mighatb if owner==0 & state==6
+(39,953 real changes made)
+
+. sum migresid [w=perwt] if owner==1 & age>=25 & age<=35
+(analytic weights assumed)
+
+    Variable |     Obs      Weight        Mean   Std. dev.       Min        Max
+-------------+-----------------------------------------------------------------
+    migresid |  81,679     8181891   -.0226975   .1952951  -.2484818    .992952
+
+. replace mighatb = r(mean)+mighatb if owner==1 & state==6
+(43,690 real changes made)
+
+. sum dmet [w=perwt] if regsample==1 & age>=36 & age<=55
+(analytic weights assumed)
+
+    Variable |     Obs      Weight        Mean   Std. dev.       Min        Max
+-------------+-----------------------------------------------------------------
+        dmet | 398,652    42340437    .0290111   .1678377          0          1
+
+. replace mighatb = r(mean) if state==8
+(14,233 real changes made)
+
+. sum migresid [w=perwt] if owner==0 & age>=36 & age<=55
+(analytic weights assumed)
+
+    Variable |     Obs      Weight        Mean   Std. dev.       Min        Max
+-------------+-----------------------------------------------------------------
+    migresid | 117,010    14987794     .018684   .2191728  -.2247182   1.017269
+
+. replace mighatb = r(mean)+mighatb if owner==0 & state==8
+(4,743 real changes made)
+
+. sum migresid [w=perwt] if owner==1 & age>=36 & age<=55
+(analytic weights assumed)
+
+    Variable |     Obs      Weight        Mean   Std. dev.       Min        Max
+-------------+-----------------------------------------------------------------
+    migresid | 281,642    27352643   -.0115848   .1294634  -.2061172   1.021898
+
+. replace mighatb = r(mean)+mighatb if owner==1 & state==8
+(9,490 real changes made)
+
+. sum dmet [w=perwt] if regsample==1 & educ<=8
+(analytic weights assumed)
+
+    Variable |     Obs      Weight        Mean   Std. dev.       Min        Max
+-------------+-----------------------------------------------------------------
+        dmet | 429,724    47755838    .0358197   .1858407          0          1
+
+. replace mighatb = r(mean) if state==12
+(45,317 real changes made)
+
+. sum migresid [w=perwt] if owner==0 & educ<=8
+(analytic weights assumed)
+
+    Variable |     Obs      Weight        Mean   Std. dev.       Min        Max
+-------------+-----------------------------------------------------------------
+    migresid | 172,686    23006285    .0082708   .2269382  -.3107616   1.017269
+
+. replace mighatb = r(mean)+mighatb if owner==0 & state==12
+(16,964 real changes made)
+
+. sum migresid [w=perwt] if owner==1 & educ<=8
+(analytic weights assumed)
+
+    Variable |     Obs      Weight        Mean   Std. dev.       Min        Max
+-------------+-----------------------------------------------------------------
+    migresid | 257,038    24749553   -.0076882   .1326215  -.2917914   1.021898
+
+. replace mighatb = r(mean)+mighatb if owner==1 & state==12
+(28,353 real changes made)
+
+. sum dmet [w=perwt] if regsample==1 & educ>=9 & educ~=.
+(analytic weights assumed)
+
+    Variable |     Obs      Weight        Mean   Std. dev.       Min        Max
+-------------+-----------------------------------------------------------------
+        dmet | 304,892    30318417    .0582694   .2342525          0          1
+
+. replace mighatb = r(mean) if state==13
+(24,294 real changes made)
+
+. sum migresid [w=perwt] if owner==0 & educ>=9 & educ~=.
+(analytic weights assumed)
+
+    Variable |     Obs      Weight        Mean   Std. dev.       Min        Max
+-------------+-----------------------------------------------------------------
+    migresid |  89,158    10215150     .042456   .3223496  -.3183396   .9995183
+
+. replace mighatb = r(mean)+mighatb if owner==0 & state==13
+(8,674 real changes made)
+
+. sum migresid [w=perwt] if owner==1 & educ>=9 & educ~=.
+(analytic weights assumed)
+
+    Variable |     Obs      Weight        Mean   Std. dev.       Min        Max
+-------------+-----------------------------------------------------------------
+    migresid | 215,734    20103267   -.0215733   .1575386   -.277427   .9941176
+
+. replace mighatb = r(mean)+mighatb if owner==1 & state==13
+(15,620 real changes made)
+
+. sum dmet [w=perwt] if regsample==1 & black==1
+(analytic weights assumed)
+
+    Variable |     Obs      Weight        Mean   Std. dev.       Min        Max
+-------------+-----------------------------------------------------------------
+        dmet |  67,503    10393585     .040779   .1977793          0          1
+
+. replace mighatb = r(mean) if state==17
+(29,817 real changes made)
+
+. sum migresid [w=perwt] if owner==0 & black==1
+(analytic weights assumed)
+
+    Variable |     Obs      Weight        Mean   Std. dev.       Min        Max
+-------------+-----------------------------------------------------------------
+    migresid |  39,609     6730640    .0069686    .223615  -.2858243    1.01474
+
+. replace mighatb = r(mean)+mighatb if owner==0 & state==17
+(9,421 real changes made)
+
+. sum migresid [w=perwt] if owner==1 & black==1
+(analytic weights assumed)
+
+    Variable |     Obs      Weight        Mean   Std. dev.       Min        Max
+-------------+-----------------------------------------------------------------
+    migresid |  27,894     3662945   -.0128048   .1297336  -.2630306   1.017441
+
+. replace mighatb = r(mean)+mighatb if owner==1 & state==17
+(20,396 real changes made)
+
+. sum dmet [w=perwt] if regsample==1 & hisp==1
+(analytic weights assumed)
+
+    Variable |     Obs      Weight        Mean   Std. dev.       Min        Max
+-------------+-----------------------------------------------------------------
+        dmet |  99,219    13096514    .0373468   .1896111          0          1
+
+. replace mighatb = r(mean) if state==18
+(16,031 real changes made)
+
+. sum migresid [w=perwt] if owner==0 & hisp==1
+(analytic weights assumed)
+
+    Variable |     Obs      Weight        Mean   Std. dev.       Min        Max
+-------------+-----------------------------------------------------------------
+    migresid |  49,750     7240280    .0076223   .2213546   -.297932   1.016508
+
+. replace mighatb = r(mean)+mighatb if owner==0 & state==18
+(4,862 real changes made)
+
+. sum migresid [w=perwt] if owner==1 & hisp==1
+(analytic weights assumed)
+
+    Variable |     Obs      Weight        Mean   Std. dev.       Min        Max
+-------------+-----------------------------------------------------------------
+    migresid |  49,469     5856234   -.0094237   .1338734  -.2823351   1.021898
+
+. replace mighatb = r(mean)+mighatb if owner==1 & state==18
+(11,169 real changes made)
+
+. graph bar mighatb if state<=18 & state~=5 & state~=9 & state~=10 & state~=11 & state~=16, saving(fig4, replace) over(owner, gap(10) relab(1 "Renter" 2 "Owner") lab(angle(45))) over(state,  gap(100) 
+> relab(1 `""No" "Controls""' 2 "Controls" 3 `""Age" "25-35""' 4 `""Age" "36-55""' 5 `""No Coll." "Degree""' 6 `""Coll." "Degree +""' 7 "Black" 8 "Hispanic") lab(labsize(medsmall)))  bar(1, color(navy
+> )) ylab(, nogrid) graphregion(color(white)) ytitle("Average Migration Rate")
+(file fig4.gph not found)
+file fig4.gph saved
+
+. graph export fig4.pdf, replace
+file fig4.pdf saved as PDF format
+
+. 
+. 
+. quietly log close
