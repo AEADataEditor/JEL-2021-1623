@@ -1,0 +1,205 @@
+-------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /home/rstudio/code/makeJELfigure.log
+  log type:  text
+ opened on:  11 Mar 2022, 19:50:07
+
+. 
+. global datapath "../data"
+
+. 
+. *** Reading in narrow extract from IPUMS to make figure of share residing out
+> side birth state by age, by cohort
+. 
+. /***
+> The following variables were downloaded:
+> 
+> label var year     `"Census year"'
+> label var sample   `"IPUMS sample identifier"'
+> label var serial   `"Household serial number"'
+> label var cbserial `"Original Census Bureau household serial number"'
+> label var hhwt     `"Household weight"'
+> label var cluster  `"Household cluster for variance estimation"'
+> label var statefip `"State (FIPS code)"'
+> label var strata   `"Household strata for variance estimation"'
+> label var gq       `"Group quarters status"'
+> label var pernum   `"Person number in sample unit"'
+> label var perwt    `"Person weight"'
+> label var age      `"Age"'
+> label var birthyr  `"Year of birth"'
+> label var bpl      `"Birthplace [general version]"'
+> label var bpld     `"Birthplace [detailed version]"'
+> label var qbpl     `"Flag for Bpl, Nativity"'
+> ***/
+. 
+. 
+. 
+. * Read in extract from IPUMS
+. 
+. * do usa_00028.do
+. use "${datapath}/ipums_extract.dta", clear
+
+. 
+. * Confirm no GQ, no minors
+. summ age
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+         age | 95,638,942    37.01726    23.15257          0        100
+
+. tab1 gq
+
+-> tabulation of gq  
+
+                  Group quarters status |      Freq.     Percent        Cum.
+----------------------------------------+-----------------------------------
+       Households under 1970 definition | 92,422,722       96.64       96.64
+Additional households under 1990 defini |    142,730        0.15       96.79
+           Group quarters--Institutions |  1,511,326        1.58       98.37
+                   Other group quarters |  1,553,255        1.62       99.99
+Additional households under 2000 defini |      8,909        0.01      100.00
+----------------------------------------+-----------------------------------
+                                  Total | 95,638,942      100.00
+
+. 
+. * Drop those with altered or imputed birthplace
+. drop if qbpl~=0
+(6,633,078 observations deleted)
+
+. 
+. gen cohort=.
+(89,005,864 missing values generated)
+
+. replace cohort=1 if birthyr>=1940 & birthyr<1949
+(9,373,458 real changes made)
+
+. replace cohort=2 if birthyr>=1950 & birthyr<1959
+(12,944,838 real changes made)
+
+. replace cohort=3 if birthyr>=1960 & birthyr<1969
+(11,161,998 real changes made)
+
+. replace cohort=4 if birthyr>=1970 & birthyr<1979
+(8,845,953 real changes made)
+
+. replace cohort=5 if birthyr>=1980 & birthyr<1989
+(7,657,891 real changes made)
+
+. replace cohort=6 if birthyr>=1990 & birthyr<1999
+(6,498,770 real changes made)
+
+. *replace cohort=7 if birthyr>=2000 & birthyr<2009
+. 
+. label define cohortlbl 1 "1940s" 2 "1950s" 3 "1960s" 4 "1970s" 5 "1980s" 6 "1
+> 990s"
+
+. label values cohort cohortlbl
+
+. 
+. drop if cohort==.
+(32,522,956 observations deleted)
+
+. 
+. drop if bpl > 56 | bpl < 1
+(6,488,768 observations deleted)
+
+. drop if statefip > 56 | statefip < 1
+(334,837 observations deleted)
+
+. 
+. gen oobs=0
+
+. replace oobs=1 if bpl~=statefip
+(15,412,603 real changes made)
+
+. 
+. summ cohort age oobs
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+      cohort | 49,659,303    3.216058    1.626354          1          6
+         age | 49,659,303    32.33919    19.17793          0         79
+        oobs | 49,659,303    .3103669    .4626438          0          1
+
+. 
+. * Extracts should be self-weighting...
+. 
+. collapse (mean) oobs, by(age cohort)
+
+. 
+. save JELgraphdata.dta, replace
+file JELgraphdata.dta saved
+
+. clear
+
+. 
+. 
+. use JELgraphdata.dta
+
+. 
+. drop if age > 59
+(30 observations deleted)
+
+. 
+. graph twoway connect oobs age if cohort==1 || connect oobs age if cohort==2 |
+> | connect oobs age if cohort==3 || connect oobs age if cohort==4 || connect o
+> obs age if cohort==5 || connect oobs age if cohort==6, ///
+>   ytitle("Share residing outside birth state") ///
+>   xtitle("Age") ///
+>   legend(label(1 "1940s") label(2 "1950s") label(3 "1960s") label(4 "1970s") 
+> label(5 "1980s") label(6 "1990s"))
+
+. graph save JELcohorts.gph, replace
+file JELcohorts.gph saved
+
+. graph export JELcohorts.pdf, replace
+file JELcohorts.pdf saved as PDF format
+
+. 
+. graph twoway connect oobs age if cohort==1 || connect oobs age if cohort==4 |
+> | connect oobs age if cohort==6, ///
+>   ytitle("Share residing outside birth state") ///
+>   xtitle("Age") ///
+>   legend(label(1 "1940s") label(2 "1970s") label(3 "1990s"))
+
+. graph save JELcohorts_few.gph, replace
+file JELcohorts_few.gph saved
+
+. graph save JELcohorts_few.pdf, replace
+(file JELcohorts_few.pdf not found)
+file JELcohorts_few.pdf saved as .gph format
+
+. 
+. sort age cohort
+
+. gen ref=oobs if cohort==1  
+(230 missing values generated)
+
+. by age: egen ref40=max(ref)
+(56 missing values generated)
+
+. gen reloobs=oobs - ref40
+(56 missing values generated)
+
+. 
+. graph twoway connect reloobs age if cohort==2 || connect reloobs age if cohor
+> t==3 || connect reloobs age if cohort==4 || connect reloobs age if cohort==5 
+> || connect reloobs age if cohort==6, ///
+>   ytitle("Share residing outside birth state, relative to 1940") ///
+>   xtitle("Age") ///
+>   legend(label(1 "1950s") label(2 "1960s") label(3 "1970s") label(4 "1980s") 
+> label(5 "1990s"))
+
+. graph save JELcohorts_relative.gph, replace
+file JELcohorts_relative.gph saved
+
+. graph export JELcohorts_relative.pdf, replace
+file JELcohorts_relative.pdf saved as PDF format
+
+.   
+. 
+. 
+. 
+. 
+. 
+end of do-file
