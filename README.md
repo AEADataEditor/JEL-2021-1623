@@ -12,11 +12,14 @@ This requires both R and Stata, because R is used to create and download the IPU
 
 Upload JSON specification to IPUMS API, wait for files to be created, then download, and convert to Stata
 
+> Currently does not work for Fig 3, which uses CPS data. The Beta IPUMS API was not available for CPS data at the time this process was run.
+
 ### Step 2
 
 Run Stata code.
 
-> Currently only works for Fig 1.
+> Will fail for Figure 3, since the data is not included in this deposit.
+
 
 ## Pulling it all together
 
@@ -40,4 +43,5 @@ The R functionality leverages the [IPUMS API](https://beta.developer.ipums.org/d
 
 Alternatively, the R functionality to download the data can be skipped. Once the extract has been created, you can go to [My Data|IPUMS](https://usa.ipums.org/usa-action/data_requests/download) to download the extract. Code will need to be adjusted.
 
+Downloading data takes about 9 min on a home internet connection. That does not take into account time for IPUMS to create the extract, which may take up to an hour. Computing the figures takes less than 1 min.
 

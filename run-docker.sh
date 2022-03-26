@@ -34,6 +34,7 @@ else
 fi
 
 # ensure that the directories are writable by Docker
+[[ -d data ]] || mkdir data
 chmod a+rwX code code/*
 chmod a+rwX data 
 chmod a+rx  run

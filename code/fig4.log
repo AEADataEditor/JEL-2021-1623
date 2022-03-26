@@ -2,7 +2,7 @@
       name:  <unnamed>
        log:  /home/rstudio/code/fig4.log
   log type:  text
- opened on:  26 Mar 2022, 14:00:26
+ opened on:  26 Mar 2022, 14:28:59
 
 . 
 . /* this dataset is the 1-year 2019 ACS data downloaded from IPUMS https://usa.ipums.org/usa/.
@@ -560,7 +560,6 @@
 . graph bar mighatb if state<=18 & state~=5 & state~=9 & state~=10 & state~=11 & state~=16, saving(fig4, replace) over(owner, gap(10) relab(1 "Renter" 2 "Owner") lab(angle(45))) over(state,  gap(100) 
 > relab(1 `""No" "Controls""' 2 "Controls" 3 `""Age" "25-35""' 4 `""Age" "36-55""' 5 `""No Coll." "Degree""' 6 `""Coll." "Degree +""' 7 "Black" 8 "Hispanic") lab(labsize(medsmall)))  bar(1, color(navy
 > )) ylab(, nogrid) graphregion(color(white)) ytitle("Average Migration Rate")
-(file fig4.gph not found)
 file fig4.gph saved
 
 . graph export fig4.pdf, replace

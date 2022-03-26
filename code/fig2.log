@@ -2,7 +2,7 @@
       name:  <unnamed>
        log:  /home/rstudio/code/fig2.log
   log type:  text
- opened on:  26 Mar 2022, 14:00:24
+ opened on:  26 Mar 2022, 14:28:57
 
 . 
 . /* this dataset is the 1-year 2019 ACS data downloaded from IPUMS https://usa.ipums.org/usa/.
@@ -123,6 +123,7 @@
 . rename perwt inmig
 
 . save temp, replace
+(file temp.dta not found)
 file temp.dta saved
 
 . restore
